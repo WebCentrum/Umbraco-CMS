@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Text;
 using System.Web;
@@ -32,7 +32,7 @@ namespace Umbraco.Web.Mvc
                     //lastly, we will use the singleton, the only reason this should ever happen is is someone is rendering a page that inherits from this
                     //class and are rendering it outside of the normal Umbraco routing process. Very unlikely.
                     ?? UmbracoContext.Current;
-                
+
                 return umbCtx;
             }
         }
@@ -92,7 +92,7 @@ namespace Umbraco.Web.Mvc
                     var model = ViewData.Model;
                     var content = model as IPublishedContent;
                     if (content == null && model is IRenderModel)
-                        content = ((IRenderModel) model).Content;
+                        content = ((IRenderModel)model).Content;
                     _helper = content == null
                         ? new UmbracoHelper(UmbracoContext)
                         : new UmbracoHelper(UmbracoContext, content);
@@ -138,13 +138,13 @@ namespace Umbraco.Web.Mvc
             var viewDataModel = viewData.Model;
 
             // map the view data (may change its type, may set model to null)
-            viewData = MapViewDataDictionary(viewData, typeof (TModel));
+            viewData = MapViewDataDictionary(viewData, typeof(TModel));
 
             var culture = CultureInfo.CurrentCulture;
             // bind the model (use context culture as default, if available)
             if (UmbracoContext.PublishedContentRequest != null && UmbracoContext.PublishedContentRequest.Culture != null)
                 culture = UmbracoContext.PublishedContentRequest.Culture;
-            viewData.Model = RenderModelBinder.BindModel(viewDataModel, typeof (TModel), culture);
+            viewData.Model = RenderModelBinder.BindModel(viewDataModel, typeof(TModel), culture);
 
             // set the view data
             base.SetViewData(viewData);
@@ -186,6 +186,11 @@ namespace Umbraco.Web.Mvc
             return nViewData;
         }
 
+        protected virtual string AdjustProfilerOrPreview(string markupToInject)
+        {
+            return markupToInject;
+        }
+
         /// <summary>
         /// This will detect the end /body tag and insert the preview badge if in preview mode
         /// </summary>
@@ -219,6 +224,8 @@ namespace Umbraco.Web.Mvc
                             markupToInject = Html.RenderProfiler().ToHtmlString();
                         }
 
+                        markupToInject = AdjustProfilerOrPreview(markupToInject);
+
                         var sb = new StringBuilder(text);
                         sb.Insert(pos, markupToInject);
 
@@ -247,7 +254,7 @@ namespace Umbraco.Web.Mvc
         {
             return WebViewPageExtensions.RenderSection(this, name, defaultContents);
         }
-        
+
         public HelperResult RenderSection(string name, IHtmlString defaultContents)
         {
             return WebViewPageExtensions.RenderSection(this, name, defaultContents);
