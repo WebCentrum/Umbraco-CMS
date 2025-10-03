@@ -307,14 +307,14 @@ namespace Umbraco.Core.Persistence.Repositories
         {
             Func<Sql, Sql> translate = s =>
             {
-                return s.Where(GetBaseWhereClause(), new {Id = id})
+                return s.Where(GetBaseWhereClause(), new { Id = id })
                     .OrderByDescending<ContentVersionDto>(x => x.VersionDate, SqlSyntax);
             };
 
             var sqlFull = translate(GetBaseQuery(BaseQueryType.FullMultiple));
             var sqlIds = translate(GetBaseQuery(BaseQueryType.Ids));
 
-            return ProcessQuery(sqlFull, new PagingSqlQuery(sqlIds), true,  includeAllVersions:true);
+            return ProcessQuery(sqlFull, new PagingSqlQuery(sqlIds), true, includeAllVersions: true);
         }
 
         public override IContent GetByVersion(Guid versionId)
@@ -521,8 +521,8 @@ namespace Umbraco.Core.Persistence.Repositories
                     NodeId = dto.NodeId,
                     Published = true
                 };
-                ((Content) entity).PublishedVersionGuid = dto.VersionId;
-                ((Content) entity).PublishedDate = dto.UpdateDate;
+                ((Content)entity).PublishedVersionGuid = dto.VersionId;
+                ((Content)entity).PublishedDate = dto.UpdateDate;
             }
 
             entity.ResetDirtyProperties();
@@ -701,21 +701,21 @@ namespace Umbraco.Core.Persistence.Repositories
                     NodeId = dto.NodeId,
                     Published = true
                 };
-                ((Content) entity).PublishedVersionGuid = dto.VersionId;
-                ((Content) entity).PublishedDate = dto.UpdateDate;
+                ((Content)entity).PublishedVersionGuid = dto.VersionId;
+                ((Content)entity).PublishedDate = dto.UpdateDate;
             }
             else if (publishedStateChanged)
             {
                 dto.DocumentPublishedReadOnlyDto = new DocumentPublishedReadOnlyDto
                 {
-                    VersionId = default (Guid),
-                    VersionDate = default (DateTime),
+                    VersionId = default(Guid),
+                    VersionDate = default(DateTime),
                     Newest = false,
                     NodeId = dto.NodeId,
                     Published = false
                 };
-                ((Content) entity).PublishedVersionGuid = default(Guid);
-                ((Content) entity).PublishedDate = default (DateTime);
+                ((Content)entity).PublishedVersionGuid = default(Guid);
+                ((Content)entity).PublishedDate = default(DateTime);
             }
 
             entity.ResetDirtyProperties();
@@ -791,11 +791,10 @@ namespace Umbraco.Core.Persistence.Repositories
             pIdAtt.Value = "-1";
             parent.Attributes.Append(pIdAtt);
             xmlDoc.AppendChild(parent);
-
             //Ensure that only nodes that have published versions are selected
             var sql = string.Format(@"select umbracoNode.id, umbracoNode.parentID, umbracoNode.sortOrder, cmsContentXml.{0}, umbracoNode.{1} from umbracoNode
 inner join cmsContentXml on cmsContentXml.nodeId = umbracoNode.id and umbracoNode.nodeObjectType = @type
-where umbracoNode.id in (select cmsDocument.nodeId from cmsDocument where cmsDocument.published = 1)
+where umbracoNode.id in (select cmsDocument.nodeId from cmsDocument where cmsDocument.published = 1) and umbracoNode.level = @level
 order by umbracoNode.{2}, umbracoNode.parentID, umbracoNode.sortOrder",
                 SqlSyntax.GetQuotedColumnName("xml"),
                 SqlSyntax.GetQuotedColumnName("level"),
@@ -803,32 +802,40 @@ order by umbracoNode.{2}, umbracoNode.parentID, umbracoNode.sortOrder",
 
             XmlElement last = null;
 
-            //NOTE: Query creates a reader - does not load all into memory
-            foreach (var row in Database.Query<dynamic>(sql, new { type = NodeObjectTypeId }))
+            // select in batches, otherwise very slow
+            var maxLevel = Database.Single<int>("select max(level) from umbracov2.umbracoNode");
+            for (var level = 1; level <= maxLevel; level++)
             {
-                string parentId = ((int)row.parentID).ToInvariantString();
-                string xml = row.xml;
-                int sortOrder = row.sortOrder;
+                Database.OneTimeCommandTimeout = 600;
 
-                //if the parentid is changing
-                if (last != null && last.GetAttribute("parentID") != parentId)
+                //NOTE: Query creates a reader - does not load all into memory
+                foreach (var row in Database.Query<dynamic>(sql, new { type = NodeObjectTypeId, level }))
                 {
-                    parent = xmlDoc.GetElementById(parentId);
-                    if (parent == null)
+                    string parentId = ((int)row.parentID).ToInvariantString();
+                    string xml = row.xml;
+                    int sortOrder = row.sortOrder;
+
+                    //if the parentid is changing
+                    if (last != null && last.GetAttribute("parentID") != parentId)
                     {
-                        //Need to short circuit here, if the parent is not there it means that the parent is unpublished
-                        // and therefore the child is not published either so cannot be included in the xml cache
-                        continue;
+                        parent = xmlDoc.GetElementById(parentId);
+                        if (parent == null)
+                        {
+                            //Need to short circuit here, if the parent is not there it means that the parent is unpublished
+                            // and therefore the child is not published either so cannot be included in the xml cache
+                            continue;
+                        }
                     }
+
+                    var xmlDocFragment = xmlDoc.CreateDocumentFragment();
+                    xmlDocFragment.InnerXml = xml;
+
+                    last = (XmlElement)parent.AppendChild(xmlDocFragment);
+
+                    // fix sortOrder - see notes in UpdateSortOrder
+                    last.Attributes["sortOrder"].Value = sortOrder.ToInvariantString();
                 }
-
-                var xmlDocFragment = xmlDoc.CreateDocumentFragment();
-                xmlDocFragment.InnerXml = xml;
-
-                last = (XmlElement)parent.AppendChild(xmlDocFragment);
-
-                // fix sortOrder - see notes in UpdateSortOrder
-                last.Attributes["sortOrder"].Value = sortOrder.ToInvariantString();
+                LogHelper.Info<ContentRepository>($"Loaded content on level {level} from database...");
             }
 
             return xmlDoc;
@@ -916,7 +923,7 @@ order by umbracoNode.{2}, umbracoNode.parentID, umbracoNode.sortOrder",
         public void ClearPublished(IContent content)
         {
             var sql = "UPDATE cmsDocument SET published=0 WHERE nodeId=@id AND published=1";
-            Database.Execute(sql, new {id = content.Id});
+            Database.Execute(sql, new { id = content.Id });
         }
 
         /// <summary>
