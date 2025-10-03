@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -87,6 +87,16 @@ namespace Umbraco.Core
             {
                 return Attempt<T>.Fail(e);
             }
+        }
+
+        public static Attempt<T> TryConvertToSafe<T>(this object input)
+        {
+            var result = TryConvertTo(input, typeof(T));
+
+            if (result.Success)
+                return Attempt<T>.Succeed((T)result.Result);
+
+            return Attempt<T>.Fail(result.Exception);
         }
 
         /// <summary>

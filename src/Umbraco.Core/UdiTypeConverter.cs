@@ -23,10 +23,13 @@ namespace Umbraco.Core
 
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value is string)
+            if (value is string str)
             {
+                if (str.IsNullOrWhiteSpace())
+                    return null;
+
                 Udi udi;
-                if (Udi.TryParse((string)value, out udi))
+                if (Udi.TryParse(str, out udi))
                 {
                     return udi;
                 }

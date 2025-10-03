@@ -7,7 +7,6 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -16,7 +15,6 @@ using Umbraco.Core.Configuration;
 using Umbraco.Core.Models;
 using Umbraco.Core.Models.PublishedContent;
 using Umbraco.Core.PropertyEditors;
-using Umbraco.Web.Extensions;
 
 namespace Umbraco.Web.PropertyEditors.ValueConverters
 {
@@ -77,10 +75,10 @@ namespace Umbraco.Web.PropertyEditors.ValueConverters
         /// </returns>
         public override object ConvertDataToSource(PublishedPropertyType propertyType, object source, bool preview)
         {
-            var attemptConvertInt = source.TryConvertTo<int>();
+            var attemptConvertInt = source.TryConvertToSafe<int>();
             if (attemptConvertInt.Success)
                 return attemptConvertInt.Result;
-            var attemptConvertUdi = source.TryConvertTo<Udi>();
+            var attemptConvertUdi = source.TryConvertToSafe<Udi>();
             if (attemptConvertUdi.Success)
                 return attemptConvertUdi.Result;
             return null;
@@ -117,7 +115,7 @@ namespace Umbraco.Web.PropertyEditors.ValueConverters
                 {
                     var sourceInt = (int)source;
                     content = UmbracoContext.Current.ContentCache.GetById(sourceInt);
-                    if(content != null)
+                    if (content != null)
                         return content;
                 }
                 else
