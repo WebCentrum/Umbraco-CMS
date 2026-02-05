@@ -126,49 +126,42 @@ namespace Umbraco.Core.Persistence.SqlSyntax
 
         public virtual string GetStringColumnEqualComparison(string column, int paramIndex, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) = upper(@{1})", column, paramIndex);
+            return string.Format("{0} = @{1}", column, paramIndex);
         }
 
         public virtual string GetStringColumnWildcardComparison(string column, int paramIndex, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) LIKE upper(@{1})", column, paramIndex);
+            return string.Format("{0} LIKE @{1}", column, paramIndex);
         }
 
         [Obsolete("Use the overload with the parameter index instead")]
         public virtual string GetStringColumnEqualComparison(string column, string value, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) = '{1}'", column, value.ToUpper());
+            return string.Format("{0} = '{1}'", column, value);
         }
 
         [Obsolete("Use the overload with the parameter index instead")]
         public virtual string GetStringColumnStartsWithComparison(string column, string value, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) LIKE '{1}%'", column, value.ToUpper());
+            return string.Format("{0} LIKE '{1}%'", column, value);
         }
 
         [Obsolete("Use the overload with the parameter index instead")]
         public virtual string GetStringColumnEndsWithComparison(string column, string value, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) LIKE '%{1}'", column, value.ToUpper());
+            return string.Format("{0} LIKE '%{1}'", column, value);
         }
 
         [Obsolete("Use the overload with the parameter index instead")]
         public virtual string GetStringColumnContainsComparison(string column, string value, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) LIKE '%{1}%'", column, value.ToUpper());
+            return string.Format("{0} LIKE '%{1}%'", column, value);
         }
 
         [Obsolete("Use the overload with the parameter index instead")]
         public virtual string GetStringColumnWildcardComparison(string column, string value, TextColumnType columnType)
         {
-            //use the 'upper' method to always ensure strings are matched without case sensitivity no matter what the db setting.
-            return string.Format("upper({0}) LIKE '{1}'", column, value.ToUpper());
+            return string.Format("{0} LIKE '{1}'", column, value);
         }
 
         public virtual string GetQuotedTableName(string tableName)
@@ -537,7 +530,7 @@ namespace Umbraco.Core.Persistence.SqlSyntax
 
         public virtual string CreateConstraint { get { return "ALTER TABLE {0} ADD CONSTRAINT {1} {2} ({3})"; } }
         public virtual string DeleteConstraint { get { return "ALTER TABLE {0} DROP CONSTRAINT {1}"; } }
-        
+
         public virtual string CreateForeignKeyConstraint { get { return "ALTER TABLE {0} ADD CONSTRAINT {1} FOREIGN KEY ({2}) REFERENCES {3} ({4}){5}{6}"; } }
 
         public virtual string ConvertIntegerToOrderableString { get { return "REPLACE(STR({0}, 8), SPACE(1), '0')"; } }
