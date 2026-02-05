@@ -31,14 +31,14 @@ namespace Umbraco.Core.Auditing
         private IUser GetPerformingUser(int userId)
         {
             var found = userId >= 0 ? _userServiceInstance.GetUserById(userId) : null;
-            return found ?? new User {Id = 0, Name = "SYSTEM", Email = ""};
+            return found ?? new User { Id = 0, Name = "SYSTEM", Email = "" };
         }
 
         private string PerformingIp
         {
             get
             {
-                var httpContext = HttpContext.Current == null ? (HttpContextBase) null : new HttpContextWrapper(HttpContext.Current);
+                var httpContext = HttpContext.Current == null ? (HttpContextBase)null : new HttpContextWrapper(HttpContext.Current);
                 var ip = httpContext.GetCurrentRequestIpAddress();
                 if (ip.ToLowerInvariant().StartsWith("unknown")) ip = "";
                 return ip;
@@ -130,6 +130,11 @@ namespace Umbraco.Core.Auditing
         private void OnSavedUserGroupWithUsers(IUserService sender, SaveEventArgs<UserGroupWithUsers> saveEventArgs)
         {
             var performingUser = CurrentPerformingUser;
+
+            // perun sync - skip
+            if (performingUser.Id == 0)
+                return;
+
             foreach (var groupWithUser in saveEventArgs.SavedEntities)
             {
                 var group = groupWithUser.UserGroup;
@@ -201,7 +206,7 @@ namespace Umbraco.Core.Auditing
             var members = saveEventArgs.SavedEntities;
             foreach (var member in members)
             {
-                var dp = string.Join(", ", ((Member) member).GetPreviouslyDirtyProperties());
+                var dp = string.Join(", ", ((Member)member).GetPreviouslyDirtyProperties());
 
                 _auditServiceInstance.Write(performingUser.Id, $"User \"{performingUser.Name}\" {FormatEmail(performingUser)}", PerformingIp,
                     DateTime.UtcNow,
