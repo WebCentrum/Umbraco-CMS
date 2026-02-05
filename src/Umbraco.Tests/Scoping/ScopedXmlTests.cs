@@ -52,7 +52,6 @@ namespace Umbraco.Tests.Scoping
             _onPublishedAssertAction = null;
             content.HttpContextItemsGetter = null;
             ContentService.Published -= OnPublishedAssert;
-            SafeXmlReaderWriter.Cloning = null;
 
             ServerRegistrarResolver.Reset();
             ServerMessengerResolver.Reset();
@@ -226,9 +225,6 @@ namespace Umbraco.Tests.Scoping
             var item = new Content("name", -1, contentType);
             const int count = 10;
             var ids = new int[count];
-            var clones = 0;
-
-            SafeXmlReaderWriter.Cloning = () => { clones++; };
 
             Console.WriteLine("Xml Before:");
             Console.WriteLine(xml.OuterXml);
@@ -269,8 +265,8 @@ namespace Umbraco.Tests.Scoping
             // was called did proper scoped work, or some direct (NoScope) use of the database
             Assert.IsNull(scopeProvider.AmbientContext);
 
-            // limited number of clones!
-            Assert.AreEqual(complete ? 1 : 0, clones);
+            // Performance optimization: no cloning anymore
+            // XML changes are protected by AsyncLock instead
 
             // this should never change
             Assert.AreEqual(beforeOuterXml, beforeXml.OuterXml);

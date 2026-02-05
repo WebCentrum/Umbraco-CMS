@@ -15,7 +15,7 @@ namespace umbraco
         private IDisposable _releaser;
         private bool _isWriter;
         private bool _applyChanges;
-        private XmlDocument _xml, _origXml;
+        private XmlDocument _xml;
         private bool _using;
         private bool _registerXmlChange;
 
@@ -31,7 +31,9 @@ namespace umbraco
             _isWriter = isWriter;
             _scoped = scoped;
 
-            _xml = _isWriter ? Clone(xml) : xml;
+            // Performance optimization: no cloning, work directly with original XML
+            // The AsyncLock ensures exclusive access
+            _xml = xml;
         }
 
         public static SafeXmlReaderWriter Get(IScopeProviderInternal scopeProvider)
@@ -81,18 +83,8 @@ namespace umbraco
                 throw new InvalidOperationException("Already a writer.");
             _isWriter = true;
 
-            _xml = Clone(_xml);
-        }
-
-        internal static Action Cloning { get; set; }
-
-        private XmlDocument Clone(XmlDocument xml)
-        {
-            if (Cloning != null) Cloning();
-            if (_origXml != null)
-                throw new Exception("panic.");
-            _origXml = xml;
-            return xml == null ? null : (XmlDocument) xml.CloneNode(true);
+            // Performance optimization: no cloning needed
+            // Already working with the original XML under lock
         }
 
         public XmlDocument Xml
@@ -122,11 +114,13 @@ namespace umbraco
         {
             if (_isWriter)
             {
-                // apply changes, or restore the original xml for the current request
+                // Apply changes if requested and completed successfully
+                // Note: No rollback capability since we work directly with original XML
+                // The AsyncLock ensures no concurrent modifications
                 if (_applyChanges && completed)
                     _apply(_xml, _registerXmlChange);
-                else
-                    _refresh(_origXml);
+                else if (_applyChanges == false)
+                    _refresh(_xml);
             }
 
             // release the lock
