@@ -36,7 +36,7 @@ namespace umbraco
     /// </summary>
     public class content
     {
-        private readonly IScopeProviderInternal _scopeProvider = (IScopeProviderInternal) ApplicationContext.Current.ScopeProvider;
+        private readonly IScopeProviderInternal _scopeProvider = (IScopeProviderInternal)ApplicationContext.Current.ScopeProvider;
         private XmlCacheFilePersister _persisterTask;
 
         private volatile bool _released;
@@ -537,12 +537,15 @@ namespace umbraco
         {
             try
             {
-                LogHelper.Info<content>("Loading content from database...");
+                System.Diagnostics.StackTrace t = new System.Diagnostics.StackTrace();
+
+                LogHelper.Info<content>("Loading content from database... Initiator: " + t.ToString());
+
 
                 lock (DbReadSyncLock)
                 {
                     var xmlDoc = ApplicationContext.Current.Services.ContentService.BuildXmlCache();
-                    LogHelper.Debug<content>("Done republishing Xml Index");
+                    LogHelper.Info<content>("Done loading Xml from database");
                     return xmlDoc;
                 }
             }
@@ -632,7 +635,7 @@ namespace umbraco
 
                 // capture or return the current xml in http context
                 // so that it remains stable over the entire request
-                var content = (XmlDocument) items[XmlContextContentItemKey];
+                var content = (XmlDocument)items[XmlContextContentItemKey];
                 if (content == null)
                 {
                     content = XmlContentInternal;
